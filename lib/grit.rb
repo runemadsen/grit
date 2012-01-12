@@ -47,6 +47,7 @@ require 'grit/status'
 require 'grit/submodule'
 require 'grit/blame'
 require 'grit/merge'
+require 'grit/git_server'
 
 module Grit
   VERSION = '2.4.1'
@@ -63,8 +64,8 @@ module Grit
       logger.debug { str }
     end
   end
-  self.debug = false
-  self.use_git_ruby = true
+  self.debug = true
+  self.use_git_ruby = false # RUNE: disable just for now
   self.no_quote = false
 
   @logger ||= ::Logger.new(STDOUT)

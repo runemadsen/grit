@@ -45,7 +45,7 @@ module Grit
     include GitRuby
 
     def exist?
-      File.exist?(self.git_dir)
+      GitServer::call.exist?(self.git_dir)
     end
 
     def put_raw_object(content, type)
@@ -73,10 +73,7 @@ module Grit
     class << self
       attr_accessor :git_timeout, :git_max_size
       def git_binary
-        @git_binary ||=
-          ENV['PATH'].split(':').
-            map  { |p| File.join(p, 'git') }.
-            find { |p| File.exist?(p) }
+        @git_binary ||= GitServer::call.git_path
       end
       attr_writer :git_binary
     end
@@ -109,7 +106,7 @@ module Grit
     #
     # Returns Boolean
     def fs_exist?(file)
-      File.exist?(File.join(self.git_dir, file))
+      GitServer::call.exist?(File.join(self.git_dir, file))
     end
 
     # Read a normal file from the filesystem.
@@ -117,7 +114,7 @@ module Grit
     #
     # Returns the String contents of the file
     def fs_read(file)
-      File.read(File.join(self.git_dir, file))
+      GitServer::call.read(File.join(self.git_dir, file))
     end
 
     # Write a normal file to the filesystem.
@@ -126,11 +123,7 @@ module Grit
     #
     # Returns nothing
     def fs_write(file, contents)
-      path = File.join(self.git_dir, file)
-      FileUtils.mkdir_p(File.dirname(path))
-      File.open(path, 'w') do |f|
-        f.write(contents)
-      end
+      GitServer::call.write(File.join(self.git_dir, file), contents)
     end
 
     # Delete a normal file from the filesystem
@@ -138,7 +131,7 @@ module Grit
     #
     # Returns nothing
     def fs_delete(file)
-      FileUtils.rm_rf(File.join(self.git_dir, file))
+      GitServer::call.delete(File.join(self.git_dir, file))
     end
 
     # Move a normal file
@@ -147,7 +140,7 @@ module Grit
     #
     # Returns nothing
     def fs_move(from, to)
-      FileUtils.mv(File.join(self.git_dir, from), File.join(self.git_dir, to))
+      GitServer::call.move(File.join(self.git_dir, from), File.join(self.git_dir, to))
     end
 
     # Make a directory
@@ -155,7 +148,7 @@ module Grit
     #
     # Returns nothing
     def fs_mkdir(dir)
-      FileUtils.mkdir_p(File.join(self.git_dir, dir))
+      GitServer::call.mkdir_p(File.join(self.git_dir, dir))
     end
 
     # Chmod the the file or dir and everything beneath
@@ -163,17 +156,11 @@ module Grit
     #
     # Returns nothing
     def fs_chmod(mode, file = '/')
-      FileUtils.chmod_R(mode, File.join(self.git_dir, file))
+      GitServer::call.chmod(mode, File.join(self.git_dir, file))
     end
 
     def list_remotes
-      remotes = []
-      Dir.chdir(File.join(self.git_dir, 'refs/remotes')) do
-        remotes = Dir.glob('*')
-      end
-      remotes
-    rescue
-      []
+      GitServer::call.list_dir(File.join(self.git_dir, 'refs/remotes'), '*')
     end
 
     def create_tempfile(seed, unlink = false)
@@ -340,24 +327,18 @@ module Grit
 
       # run it and deal with fallout
       Grit.log(argv.join(' ')) if Grit.debug
+      
+      response = GitServer::call.run_process(env, argv, input, chdir, (Grit::Git.git_timeout if timeout == true), (Grit::Git.git_max_size if timeout == true))
+      
+      Grit.log(response[:process_out]) if Grit.debug
+      Grit.log(response[:process_err]) if Grit.debug
 
-      process =
-        Child.new(env, *(argv + [{
-          :input   => input,
-          :chdir   => chdir,
-          :timeout => (Grit::Git.git_timeout if timeout == true),
-          :max     => (Grit::Git.git_max_size if timeout == true)
-        }]))
-      Grit.log(process.out) if Grit.debug
-      Grit.log(process.err) if Grit.debug
-
-      status = process.status
-      if raise_errors && !status.success?
-        raise CommandFailed.new(argv.join(' '), status.exitstatus, process.err)
+      if raise_errors && !response[:status_success]
+        raise CommandFailed.new(argv.join(' '), response[:status_exitstatus], response[:process_err])
       elsif process_info
-        [status.exitstatus, process.out, process.err]
+        [response[:status_exitstatus], response[:process_out], response[:process_err]]
       else
-        process.out
+        response[:process_out]
       end
     rescue TimeoutExceeded, MaximumOutputExceeded
       raise GitTimeout, argv.join(' ')

@@ -170,7 +170,7 @@ module Grit
       # if given a commit sha, it will print the tree of that commit
       # if given a path limiter array, it will limit the output to those
       # if asked for recrusive trees, will traverse trees
-      def ls_tree(sha, paths = [], recursive = false)
+      def ls_tree(sha, paths = [], recursive = false)        
         if paths.size > 0
           # pathing
           part = []
@@ -634,37 +634,7 @@ module Grit
 
       # initialize a git repository
       def self.init(dir, bare = true)
-
-        FileUtils.mkdir_p(dir) if !File.exists?(dir)
-
-        FileUtils.cd(dir) do
-          if(File.exists?('objects'))
-            return false # already initialized
-          else
-            # initialize directory
-            create_initial_config(bare)
-            FileUtils.mkdir_p('refs/heads')
-            FileUtils.mkdir_p('refs/tags')
-            FileUtils.mkdir_p('objects/info')
-            FileUtils.mkdir_p('objects/pack')
-            FileUtils.mkdir_p('branches')
-            add_file('description', 'Unnamed repository; edit this file to name it for gitweb.')
-            add_file('HEAD', "ref: refs/heads/master\n")
-            FileUtils.mkdir_p('hooks')
-            FileUtils.cd('hooks') do
-              add_file('applypatch-msg', '# add shell script and make executable to enable')
-              add_file('post-commit', '# add shell script and make executable to enable')
-              add_file('post-receive', '# add shell script and make executable to enable')
-              add_file('post-update', '# add shell script and make executable to enable')
-              add_file('pre-applypatch', '# add shell script and make executable to enable')
-              add_file('pre-commit', '# add shell script and make executable to enable')
-              add_file('pre-rebase', '# add shell script and make executable to enable')
-              add_file('update', '# add shell script and make executable to enable')
-            end
-            FileUtils.mkdir_p('info')
-            add_file('info/exclude', "# *.[oa]\n# *~")
-          end
-        end
+        GitServer::call.init_repo(dir)
       end
 
       def self.create_initial_config(bare = false)
@@ -674,9 +644,11 @@ module Grit
       end
 
       def self.add_file(name, contents)
-        File.open(name, 'w') do |f|
-          f.write contents
-        end
+        GitServer::call.write(name, contents)
+        # Rune: I'm using write here, but the original code did not have a mkdir_p call
+        # File.open(name, 'w') do |f|
+        #   f.write contents
+        # end
       end
 
       def close
@@ -702,18 +674,23 @@ module Grit
         end
 
         def each_alternate_path(path)
+          # Rune: TODO: Blocks makes me do many rpc calls here. Should be changed
+          # return GitServer::call.each_alternative_path(@git_dir, path)
+          
           alt = File.join(path, 'info/alternates')
-          return if !File.exists?(alt)
+          return if !GitServer::call.exist?(alt)
+          
+          lines = GitServer::call.readlines(alt)
 
-          File.readlines(alt).each do |line|
+          lines.each do |line|
             path = line.chomp
             if path[0, 2] == '..'
-              yield File.expand_path(File.join(@git_dir, 'objects', path))
+              yield GitServer::call.expand_path(File.join(@git_dir, 'objects', path))
 
               # XXX this is here for backward compatibility with grit < 2.3.0
               # relative alternate objects paths are expanded relative to the
               # objects directory, not the git repository directory.
-              yield File.expand_path(File.join(@git_dir, path))
+              yield GitServer::call.expand_path(File.join(@git_dir, path))
             else
               yield path
             end
@@ -724,7 +701,7 @@ module Grit
           # load alternate loose, too
           each_alternate_path pathname do |path|
             next if @loaded.include?(path)
-            next if !File.exist?(path)
+            next if !GitServer::call.exist?(path)
             load_loose(path)
             load_alternate_loose(path)
           end
@@ -732,7 +709,7 @@ module Grit
 
         def load_loose(path)
           @loaded << path
-          return if !File.exists?(path)
+          return if !GitServer::call.exist?(path)
           @loose << Grit::GitRuby::Internal::LooseStorage.new(path)
         end
 
@@ -756,19 +733,17 @@ module Grit
 
         def load_packs(path)
           @loaded_packs << path
-          return if !File.exists?(path)
-           Dir.open(path) do |dir|
-            dir.each do |entry|
-              next if !(entry =~ /\.pack$/i)
-              pack = Grit::GitRuby::Internal::PackStorage.new(File.join(path,entry))
-              if @options[:map_packfile]
-                pack.cache_objects
-              end
-              @packs << pack
+          return if !GitServer::call.exist?(path)
+          
+          packs = GitServer::call.load_packs(path)
+          packs.each do |entry|
+            pack = Grit::GitRuby::Internal::PackStorage.new(File.join(path,entry))
+            if @options[:map_packfile]
+              pack.cache_objects
             end
+            @packs << pack
           end
         end
-
     end
 
   end

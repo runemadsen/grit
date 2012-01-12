@@ -3,7 +3,7 @@ require 'grit/git-ruby/repository'
 module Grit
 
   # the functions in this module intercept the calls to git binary
-  # made buy the grit objects and attempts to run them in pure ruby
+  # made by the grit objects and attempts to run them in pure ruby
   # if it will be faster, or if the git binary is not available (!!TODO!!)
   module GitRuby
 
@@ -73,6 +73,7 @@ module Grit
     end
 
     def rev_parse(options, string)
+      
       raise RuntimeError, "invalid string: #{string.inspect}" unless string.is_a?(String)
 
       if string =~ /\.\./
@@ -83,26 +84,9 @@ module Grit
       if /^[0-9a-f]{40}$/.match(string)  # passing in a sha - just no-op it
         return string.chomp
       end
-
-      head = File.join(@git_dir, 'refs', 'heads', string)
-      return File.read(head).chomp if File.file?(head)
-
-      head = File.join(@git_dir, 'refs', 'remotes', string)
-      return File.read(head).chomp if File.file?(head)
-
-      head = File.join(@git_dir, 'refs', 'tags', string)
-      return File.read(head).chomp if File.file?(head)
-
-      ## check packed-refs file, too
-      packref = File.join(@git_dir, 'packed-refs')
-      if File.file?(packref)
-        File.readlines(packref).each do |line|
-          if m = /^(\w{40}) refs\/.+?\/(.*?)$/.match(line)
-            next if !Regexp.new(Regexp.escape(string) + '$').match(m[3])
-            return m[1].chomp
-          end
-        end
-      end
+      
+      response = GitServer::call.rev_parse(@git_dir, string)
+      return response unless response == false
 
       ## !! more - partials and such !!
 
@@ -111,84 +95,11 @@ module Grit
     end
 
     def refs(options, prefix)
-      refs = []
-      already = {}
-      Dir.chdir(@git_dir) do
-        files = Dir.glob(prefix + '/**/*')
-        files.each do |ref|
-          next if !File.file?(ref)
-          id = File.read(ref).chomp
-          name = ref.sub("#{prefix}/", '')
-          if !already[name]
-            refs << "#{name} #{id}"
-            already[name] = true
-          end
-        end
-
-        if File.file?('packed-refs')
-          File.readlines('packed-refs').each do |line|
-            if m = /^(\w{40}) (.*?)$/.match(line)
-              next if !Regexp.new('^' + prefix).match(m[2])
-              name = m[2].sub("#{prefix}/", '')
-              if !already[name]
-                refs << "#{name} #{m[1]}"
-                already[name] = true
-              end
-            end
-          end
-        end
-      end
-
-      refs.join("\n")
+      GitServer::call.refs(@git_dir, options, prefix)
     end
 
     def tags(options, prefix)
-      refs = []
-      already = {}
-
-      Dir.chdir(repo.path) do
-        files = Dir.glob(prefix + '/**/*')
-
-        files.each do |ref|
-          next if !File.file?(ref)
-
-          id = File.read(ref).chomp
-          name = ref.sub("#{prefix}/", '')
-
-          if !already[name]
-            refs << "#{name} #{id}"
-            already[name] = true
-          end
-        end
-
-        if File.file?('packed-refs')
-          lines = File.readlines('packed-refs')
-          lines.each_with_index do |line, i|
-            if m = /^(\w{40}) (.*?)$/.match(line)
-              next if !Regexp.new('^' + prefix).match(m[2])
-              name = m[2].sub("#{prefix}/", '')
-
-              # Annotated tags in packed-refs include a reference
-              # to the commit object on the following line.
-              next_line = lines[i + 1]
-
-              id =
-              if next_line && next_line[0] == ?^
-                next_line[1..-1].chomp
-              else
-                m[1]
-              end
-
-              if !already[name]
-                refs << "#{name} #{id}"
-                already[name] = true
-              end
-            end
-          end
-        end
-      end
-
-      refs.join("\n")
+      GitServer::call.tags(@git_dir, options, prefix)
     end
 
     def file_size(ref)
