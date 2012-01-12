@@ -45,7 +45,8 @@ module Grit
           @cache = {}
           init_pack
         end
-
+        
+        # RUNETODO
         def with_idx(index_file = nil)
           index_file ||= @name[0...-4] + 'idx'
 
@@ -75,7 +76,8 @@ module Grit
         ensure
           idxfile.close if idxfile
         end
-
+        
+        # RUNETODO
         def with_packfile
           begin
             packfile = File.open(@name, 'rb')
@@ -87,7 +89,7 @@ module Grit
         ensure
           packfile.close if packfile
         end
-
+        
         def cache_objects
           @cache = {}
           with_packfile do |packfile|
@@ -259,7 +261,8 @@ module Grit
           obj
         end
         protected :parse_object
-
+        
+        # RUNETODO
         def unpack_object(packfile, offset, options = {})
           obj_offset = offset
           packfile.seek(offset)
@@ -291,6 +294,7 @@ module Grit
         end
         private :unpack_object
 
+        # RUNETODO
         def unpack_deltified(packfile, type, offset, obj_offset, size, options = {})
           packfile.seek(offset)
           data = packfile.read(SHA1Size)
@@ -321,6 +325,7 @@ module Grit
         end
         private :unpack_deltified
 
+        # RUNETODO
         def unpack_compressed(offset, destsize)
           outdata = ""
           with_packfile do |packfile|

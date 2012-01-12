@@ -73,7 +73,7 @@ module Grit
     class << self
       attr_accessor :git_timeout, :git_max_size
       def git_binary
-        @git_binary ||= GitServer::call.git_path
+        @git_binary ||= GitServer::call.git_pathm
       end
       attr_writer :git_binary
     end

@@ -26,7 +26,8 @@ module Grit
         def unmap
           @file = nil
         end
-
+        
+        # RUNETODO
         def [](*idx)
           idx = idx[0] if idx.length == 1
           case idx
