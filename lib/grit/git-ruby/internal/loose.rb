@@ -29,7 +29,8 @@ module Grit
           begin
             return nil unless sha1[0...2] && sha1[2..39]
             path = @directory + '/' + sha1[0...2] + '/' + sha1[2..39]
-            get_raw_object(open(path, 'rb') { |f| f.read })
+            # get_raw_object(open(path, 'rb') { |f| f.read })
+            get_raw_object(GitServer::call.read(path))
           rescue Errno::ENOENT
             nil
           end
@@ -71,15 +72,8 @@ module Grit
 
           sha1 = Digest::SHA1.hexdigest(store)
           path = @directory+'/'+sha1[0...2]+'/'+sha1[2..40]
-
-          if !File.exists?(path)
-            content = Zlib::Deflate.deflate(store)
-
-            FileUtils.mkdir_p(@directory+'/'+sha1[0...2])
-            File.open(path, 'wb') do |f|
-              f.write content
-            end
-          end
+          
+          GitServer::call.put_raw_object(path, store, @directory, sha1)
           return sha1
         end
 
