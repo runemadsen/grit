@@ -40,17 +40,20 @@ module Grit
     def initialize(path, options = {})
       epath = File.expand_path(path)
 
-      if File.exist?(File.join(epath, '.git'))
-        self.working_dir = epath
-        self.path = File.join(epath, '.git')
-        @bare = false
-      elsif File.exist?(epath) && (epath =~ /\.git$/ || options[:is_bare])
-        self.path = epath
+      # Rune: Remove file expand
+      # RuneTODO: This is too many calls
+
+      if GitServer::call.exist?(path) && (path =~ /\.git$/ || options[:is_bare])
+        self.path = path
         @bare = true
-      elsif File.exist?(epath)
-        raise InvalidGitRepositoryError.new(epath)
+      elsif GitServer::call.exist?(File.join(path, '.git'))
+        self.working_dir = path
+        self.path = File.join(path, '.git')
+        @bare = false
+      elsif GitServer::call.exist?(path)
+        raise InvalidGitRepositoryError.new(path)
       else
-        raise NoSuchPathError.new(epath)
+        raise NoSuchPathError.new(path)
       end
 
       self.git = Git.new(self.path)
