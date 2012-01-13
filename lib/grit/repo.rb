@@ -40,7 +40,7 @@ module Grit
     def initialize(path, options = {})
       epath = File.expand_path(path)
 
-      # Rune: Remove file expand
+      # Rune: Removed file expand and made bare repo check first
       # RuneTODO: This is too many calls
 
       if GitServer::call.exist?(path) && (path =~ /\.git$/ || options[:is_bare])
