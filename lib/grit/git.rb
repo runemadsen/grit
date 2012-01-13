@@ -13,6 +13,7 @@ module Grit
     end
     
     # Rune Stub Methods
+    # -------------------------------------------------------------
     
     def fs_write(file, contents)
       GitServer::call.fs_write(self.git_dir, file, contents)
@@ -32,6 +33,17 @@ module Grit
     
     def rev_list(options, *refs)
       GitServer::call.rev_list(self.git_dir, options, refs)
+    end
+    
+    # Quick methods
+    # -------------------------------------------------------------
+    
+    def quick_commit(branch, filename, filedata, commit_message, email)    
+      GitServer::call.quick_commit(self.git_dir, branch, filename, filedata, commit_message, email)
+    end
+    
+    def quick_delete(branch, filename, commit_message, email)    
+      GitServer::call.quick_delete(self.git_dir, branch, filename, commit_message, email)
     end
 
   end

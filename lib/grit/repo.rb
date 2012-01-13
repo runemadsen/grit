@@ -127,6 +127,20 @@ module Grit
 
       self.new(path, repo_options)
     end
+    
+    # Quick Methods
+    #
+    # Server Implementations of calls that would otherwise be impossible or
+    # take up too many requests. Routes directly to the Grit::Git object
+    # --------------------------------------------------------------------------
+    
+    def quick_commit(branch, filename, filedata, commit_message, email)
+      self.git.quick_commit(branch, filename, filedata, commit_message, email)
+    end
+    
+    def quick_delete(branch, filename, commit_message, email)
+      # self.git.quick_commit(branch, filename, commit_message, email)
+    end
 
     # Public: Create a bare fork of this repository.
     #
