@@ -1,35 +1,15 @@
-# require 'tempfile'
-# require 'posix-spawn'
+# all the Grit::Git functionality is moved to the git server side, which means that this class is just a stub that makes
+# file calls to the git server.
+
 module Grit
 
   class Git
  
-    undef_method :clone
-
-    class << self
-      attr_accessor :git_timeout, :git_max_size
-      def git_binary
-        @git_binary ||= GitServer::call.git_path
-      end
-      attr_writer :git_binary
-    end
-
-    self.git_timeout  = 10
-    self.git_max_size = 5242880 # 5.megabytes
-
-    def self.with_timeout(timeout = 10)
-      old_timeout = Grit::Git.git_timeout
-      Grit::Git.git_timeout = timeout
-      yield
-      Grit::Git.git_timeout = old_timeout
-    end
-
-    attr_accessor :git_dir, :bytes_read, :work_tree
+    attr_accessor :git_dir, :work_tree
 
     def initialize(git_dir)
       self.git_dir    = git_dir
       self.work_tree  = git_dir.gsub(/\/\.git$/,'')
-      self.bytes_read = 0
     end
     
     # Rune Stub Methods
