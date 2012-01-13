@@ -38,11 +38,17 @@ module Grit
     #   a Git repository.
     # Raises Grit::NoSuchPathError if the path does not exist.
     def initialize(path, options = {})
+<<<<<<< HEAD
+      
+      # Rune: Remove file expand
+      
+=======
       epath = File.expand_path(path)
 
       # Rune: Remove file expand
       # RuneTODO: This is too many calls
 
+>>>>>>> stub
       if GitServer::call.exist?(path) && (path =~ /\.git$/ || options[:is_bare])
         self.path = path
         @bare = true

@@ -42,6 +42,35 @@ module Grit
 
     undef_method :clone
 
+<<<<<<< HEAD
+    include GitRuby
+
+    def exist?
+      GitServer::call.exist?(self.git_dir)
+    end
+
+    def put_raw_object(content, type)
+      ruby_git.put_raw_object(content, type)
+    end
+
+    def get_raw_object(object_id)
+      ruby_git.get_raw_object_by_sha1(object_id).content
+    end
+
+    def get_git_object(object_id)
+      ruby_git.get_raw_object_by_sha1(object_id).to_hash
+    end
+
+    def object_exists?(object_id)
+      ruby_git.object_exists?(object_id)
+    end
+
+    def select_existing_objects(object_ids)
+      object_ids.select do |object_id|
+        object_exists?(object_id)
+      end
+    end
+=======
     # include GitRuby
 
     # def exist?
@@ -69,11 +98,16 @@ module Grit
     #         object_exists?(object_id)
     #       end
     #     end
+>>>>>>> stub
 
     class << self
       attr_accessor :git_timeout, :git_max_size
       def git_binary
+<<<<<<< HEAD
+        @git_binary ||= GitServer::call.git_pathm
+=======
         @git_binary ||= GitServer::call.git_path
+>>>>>>> stub
       end
       attr_writer :git_binary
     end
@@ -127,23 +161,40 @@ module Grit
     #   +file+ is the relative path from the Git dir
     #
     # Returns Boolean
+<<<<<<< HEAD
+    def fs_exist?(file)
+      GitServer::call.exist?(File.join(self.git_dir, file))
+    end
+=======
     # def fs_exist?(file)
     #       File.exist?(File.join(self.git_dir, file))
     #     end
+>>>>>>> stub
 
     # Read a normal file from the filesystem.
     #   +file+ is the relative path from the Git dir
     #
     # Returns the String contents of the file
+<<<<<<< HEAD
+    def fs_read(file)
+      GitServer::call.read(File.join(self.git_dir, file))
+    end
+=======
     # def fs_read(file)
     #       File.read(File.join(self.git_dir, file))
     #     end
+>>>>>>> stub
 
     # Write a normal file to the filesystem.
     #   +file+ is the relative path from the Git dir
     #   +contents+ is the String content to be written
     #
     # Returns nothing
+<<<<<<< HEAD
+    def fs_write(file, contents)
+      GitServer::call.write(File.join(self.git_dir, file), contents)
+    end
+=======
     # def fs_write(file, contents)
     #       path = File.join(self.git_dir, file)
     #       FileUtils.mkdir_p(File.dirname(path))
@@ -151,36 +202,83 @@ module Grit
     #         f.write(contents)
     #       end
     #     end
+>>>>>>> stub
 
     # Delete a normal file from the filesystem
     #   +file+ is the relative path from the Git dir
     #
     # Returns nothing
+<<<<<<< HEAD
+    def fs_delete(file)
+      GitServer::call.delete(File.join(self.git_dir, file))
+    end
+=======
     # def fs_delete(file)
     #       FileUtils.rm_rf(File.join(self.git_dir, file))
     #     end
+>>>>>>> stub
 
     # Move a normal file
     #   +from+ is the relative path to the current file
     #   +to+ is the relative path to the destination file
     #
     # Returns nothing
+<<<<<<< HEAD
+    def fs_move(from, to)
+      GitServer::call.move(File.join(self.git_dir, from), File.join(self.git_dir, to))
+    end
+=======
     # def fs_move(from, to)
     #       FileUtils.mv(File.join(self.git_dir, from), File.join(self.git_dir, to))
     #     end
+>>>>>>> stub
 
     # Make a directory
     #   +dir+ is the relative path to the directory to create
     #
     # Returns nothing
+<<<<<<< HEAD
+    def fs_mkdir(dir)
+      GitServer::call.mkdir_p(File.join(self.git_dir, dir))
+    end
+=======
     # def fs_mkdir(dir)
     #       FileUtils.mkdir_p(File.join(self.git_dir, dir))
     #     end
+>>>>>>> stub
 
     # Chmod the the file or dir and everything beneath
     #   +file+ is the relative path from the Git dir
     #
     # Returns nothing
+<<<<<<< HEAD
+    def fs_chmod(mode, file = '/')
+      GitServer::call.chmod(mode, File.join(self.git_dir, file))
+    end
+
+    def list_remotes
+      GitServer::call.list_dir(File.join(self.git_dir, 'refs/remotes'), '*')
+    end
+
+    def create_tempfile(seed, unlink = false)
+      path = Tempfile.new(seed).path
+      File.unlink(path) if unlink
+      return path
+    end
+
+    def commit_from_sha(id)
+      git_ruby_repo = GitRuby::Repository.new(self.git_dir)
+      object = git_ruby_repo.get_object_by_sha1(id)
+
+      if object.type == :commit
+        id
+      elsif object.type == :tag
+        object.object
+      else
+        ''
+      end
+    end
+=======
     # def fs_chmod(mode, file = '/')
     #      FileUtils.chmod_R(mode, File.join(self.git_dir, file))
     #    end
@@ -213,6 +311,7 @@ module Grit
     #        ''
     #      end
     #    end
+>>>>>>> stub
 
     # Checks if the patch of a commit can be applied to the given head.
     #
@@ -329,6 +428,54 @@ module Grit
     #   git command exits with a non-zero exit status. The CommandFailed's #command,
     #   #exitstatus, and #err attributes can be used to retrieve additional
     #   detail about the error.
+<<<<<<< HEAD
+    def native(cmd, options = {}, *args, &block)
+      args     = args.first if args.size == 1 && args[0].is_a?(Array)
+      args.map!    { |a| a.to_s }
+      args.reject! { |a| a.empty? }
+
+      # special option arguments
+      env = options.delete(:env) || {}
+      raise_errors = options.delete(:raise)
+      process_info = options.delete(:process_info)
+
+      # fall back to using a shell when the last argument looks like it wants to
+      # start a pipeline for compatibility with previous versions of grit.
+      return run(prefix, cmd, '', options, args) if args[-1].to_s[0] == ?|
+
+      # more options
+      input    = options.delete(:input)
+      timeout  = options.delete(:timeout); timeout = true if timeout.nil?
+      base     = options.delete(:base);    base    = true if base.nil?
+      chdir    = options.delete(:chdir)
+
+      # build up the git process argv
+      argv = []
+      argv << Git.git_binary
+      argv << "--git-dir=#{git_dir}" if base
+      argv << cmd.to_s.tr('_', '-')
+      argv.concat(options_to_argv(options))
+      argv.concat(args)
+
+      # run it and deal with fallout
+      Grit.log(argv.join(' ')) if Grit.debug
+      
+      response = GitServer::call.run_process(env, argv, input, chdir, (Grit::Git.git_timeout if timeout == true), (Grit::Git.git_max_size if timeout == true))
+      
+      Grit.log(response[:process_out]) if Grit.debug
+      Grit.log(response[:process_err]) if Grit.debug
+
+      if raise_errors && !response[:status_success]
+        raise CommandFailed.new(argv.join(' '), response[:status_exitstatus], response[:process_err])
+      elsif process_info
+        [response[:status_exitstatus], response[:process_out], response[:process_err]]
+      else
+        response[:process_out]
+      end
+    rescue TimeoutExceeded, MaximumOutputExceeded
+      raise GitTimeout, argv.join(' ')
+    end
+=======
     # def native(cmd, options = {}, *args, &block)
     #       args     = args.first if args.size == 1 && args[0].is_a?(Array)
     #       args.map!    { |a| a.to_s }
@@ -381,6 +528,7 @@ module Grit
     #     rescue TimeoutExceeded, MaximumOutputExceeded
     #       raise GitTimeout, argv.join(' ')
     #     end
+>>>>>>> stub
 
     # Methods not defined by a library implementation execute the git command
     # using #native, passing the method name as the git command name.
