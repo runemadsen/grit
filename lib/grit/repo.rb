@@ -139,7 +139,7 @@ module Grit
     end
     
     def quick_delete(branch, filename, commit_message, email)
-      # self.git.quick_commit(branch, filename, commit_message, email)
+      self.git.quick_delete(branch, filename, commit_message, email)
     end
 
     # Public: Create a bare fork of this repository.
