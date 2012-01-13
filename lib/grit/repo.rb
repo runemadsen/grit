@@ -233,7 +233,6 @@ module Grit
       Head.current(self)
     end
 
-
     # Commits current index
     #
     # Returns true/false if commit worked
