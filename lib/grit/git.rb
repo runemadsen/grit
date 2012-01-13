@@ -73,10 +73,7 @@ module Grit
     class << self
       attr_accessor :git_timeout, :git_max_size
       def git_binary
-        @git_binary ||=
-          ENV['PATH'].split(':').
-            map  { |p| File.join(p, 'git') }.
-            find { |p| File.exist?(p) }
+        @git_binary ||= GitServer::call.git_path
       end
       attr_writer :git_binary
     end
@@ -97,6 +94,28 @@ module Grit
       self.git_dir    = git_dir
       self.work_tree  = git_dir.gsub(/\/\.git$/,'')
       self.bytes_read = 0
+    end
+    
+    # Rune Stub Methods
+    
+    def fs_write(file, contents)
+      GitServer::call.fs_write(self.git_dir, file, contents)
+    end
+    
+    def put_raw_object(content, type)
+      GitServer::call.put_raw_object(self.git_dir, content, type)
+    end
+    
+    def cat_file(options, sha)
+      GitServer::call.cat_file(self.git_dir, options, sha)
+    end
+    
+    def ls_tree(options, treeish, *paths)
+      GitServer::call.ls_tree(self.git_dir, options, treeish, paths)
+    end
+    
+    def rev_list(options, *refs)
+      GitServer::call.rev_list(self.git_dir, options, refs)
     end
 
     # def shell_escape(str)
@@ -368,18 +387,6 @@ module Grit
     #
     # Examples:
     #   git.rev_list({:max_count => 10, :header => true}, "master")
-    
-    def cat_file(options, sha)
-      GitServer::call.cat_file(self.git_dir, options, sha)
-    end
-    
-    def ls_tree(options, treeish, *paths)
-      GitServer::call.ls_tree(self.git_dir, options, treeish, paths)
-    end
-    
-    def rev_list(options, *refs)
-      GitServer::call.rev_list(self.git_dir, options, refs)
-    end
     
     # def method_missing(cmd, options={}, *args, &block)
     #       puts "Method Missing"
