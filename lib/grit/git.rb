@@ -39,9 +39,12 @@ module Grit
     # Server Quick methods
     # -------------------------------------------------------------
     
+    def quick_init_bare
+      self.git_server.call.quick_init_bare(self.git_dir)
+    end
+    
     def quick_commit(branch, filename, filedata, commit_message, email)    
-      self.git_server.call.test_raise_error
-      # self.git_server.call.quick_commit(self.git_dir, branch, filename, filedata, commit_message, email)
+      self.git_server.call.quick_commit(self.git_dir, branch, filename, filedata, commit_message, email)
     end
     
     def quick_delete(branch, filename, commit_message, email)    

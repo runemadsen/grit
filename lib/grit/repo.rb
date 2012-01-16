@@ -134,6 +134,12 @@ module Grit
     # take up too many requests. Routes directly to the Grit::Git object
     # --------------------------------------------------------------------------
     
+    def self.quick_init_bare(path, server, port)
+      git_options = {:bare => true}
+      git = Git.new(path, server, port)
+      git.quick_init_bare
+    end
+    
     def quick_commit(branch, filename, filedata, commit_message, email)
       self.git.quick_commit(branch, filename, filedata, commit_message, email)
     end
