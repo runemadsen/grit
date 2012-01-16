@@ -5,45 +5,46 @@ module Grit
 
   class Git
  
-    attr_accessor :git_dir, :work_tree
+    attr_accessor :git_dir, :work_tree, :git_server
 
-    def initialize(git_dir)
+    def initialize(git_dir, server_info)
       self.git_dir    = git_dir
       self.work_tree  = git_dir.gsub(/\/\.git$/,'')
+      self.git_server = Grit::GitServer.new(server_info[:server_url], server_info[:server_port])
     end
     
     # Rune Stub Methods
     # -------------------------------------------------------------
     
     def fs_write(file, contents)
-      GitServer::call.fs_write(self.git_dir, file, contents)
+      self.git_server.call.fs_write(self.git_dir, file, contents)
     end
     
     def put_raw_object(content, type)
-      GitServer::call.put_raw_object(self.git_dir, content, type)
+      self.git_server.call.put_raw_object(self.git_dir, content, type)
     end
     
     def cat_file(options, sha)
-      GitServer::call.cat_file(self.git_dir, options, sha)
+      self.git_server.call.cat_file(self.git_dir, options, sha)
     end
     
     def ls_tree(options, treeish, *paths)
-      GitServer::call.ls_tree(self.git_dir, options, treeish, paths)
+      self.git_server.call.ls_tree(self.git_dir, options, treeish, paths)
     end
     
     def rev_list(options, *refs)
-      GitServer::call.rev_list(self.git_dir, options, refs)
+      self.git_server.call.rev_list(self.git_dir, options, refs)
     end
     
     # Quick methods
     # -------------------------------------------------------------
     
     def quick_commit(branch, filename, filedata, commit_message, email)    
-      GitServer::call.quick_commit(self.git_dir, branch, filename, filedata, commit_message, email)
+      self.git_server.call.quick_commit(self.git_dir, branch, filename, filedata, commit_message, email)
     end
     
     def quick_delete(branch, filename, commit_message, email)    
-      GitServer::call.quick_delete(self.git_dir, branch, filename, commit_message, email)
+      self.git_server.call.quick_delete(self.git_dir, branch, filename, commit_message, email)
     end
 
   end

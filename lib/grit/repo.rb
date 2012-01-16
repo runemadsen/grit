@@ -37,26 +37,27 @@ module Grit
     # Raises Grit::InvalidGitRepositoryError if the path exists but is not
     #   a Git repository.
     # Raises Grit::NoSuchPathError if the path does not exist.
-    def initialize(path, options = {})
+    def initialize(path, server_info, options = {})
       epath = File.expand_path(path)
+      @server_info = server_info
 
       # Rune: Removed file expand and made bare repo check first
       # RuneTODO: This is too many calls
 
-      if GitServer::call.exist?(path) && (path =~ /\.git$/ || options[:is_bare])
+      if GitServer::call(server_info[:server_url], server_info[:server_port]).exist?(path) && (path =~ /\.git$/ || options[:is_bare])
         self.path = path
         @bare = true
-      elsif GitServer::call.exist?(File.join(path, '.git'))
+      elsif GitServer::call(server_info[:server_url], server_info[:server_port]).exist?(File.join(path, '.git'))
         self.working_dir = path
         self.path = File.join(path, '.git')
         @bare = false
-      elsif GitServer::call.exist?(path)
+      elsif GitServer::call(server_info[:server_url], server_info[:server_port]).exist?(path)
         raise InvalidGitRepositoryError.new(path)
       else
         raise NoSuchPathError.new(path)
       end
 
-      self.git = Git.new(self.path)
+      self.git = Git.new(self.path, server_info)
     end
 
     # Public: Initialize a git repository (create it on the filesystem). By
@@ -75,12 +76,12 @@ module Grit
     #   Grit::Repo.init('/var/git/myrepo.git')
     #
     # Returns the newly created Grit::Repo.
-    def self.init(path, git_options = {}, repo_options = {})
+    def self.init(path, server_info, git_options = {}, repo_options = {})
       git_options = {:base => false}.merge(git_options)
-      git = Git.new(path)
+      git = Git.new(path, server_info)
       git.fs_mkdir('..')
       git.init(git_options, path)
-      self.new(path, repo_options)
+      self.new(path, server_info, repo_options)
     end
 
     # Public: Initialize a bare git repository (create it on the filesystem).
@@ -97,13 +98,13 @@ module Grit
     #   Grit::Repo.init_bare('/var/git/myrepo.git')
     #
     # Returns the newly created Grit::Repo.
-    def self.init_bare(path, git_options = {}, repo_options = {})
+    def self.init_bare(path, server_info, git_options = {}, repo_options = {})
       git_options = {:bare => true}.merge(git_options)
-      git = Git.new(path)
+      git = Git.new(path, server_info)
       git.fs_mkdir('..')
       git.init(git_options)
       repo_options = {:is_bare => true}.merge(repo_options)
-      self.new(path, repo_options)
+      self.new(path, server_info, repo_options)
     end
 
     # Public: Initialize a bare Git repository (create it on the filesystem)
@@ -117,15 +118,15 @@ module Grit
     #                (default: {}).
     #
     # Returns the new or existing Grit::Repo.
-    def self.init_bare_or_open(path, git_options = {}, repo_options = {})
-      git = Git.new(path)
+    def self.init_bare_or_open(path, server_info, git_options = {}, repo_options = {})
+      git = Git.new(path, server_info)
 
       unless git.exist?
         git.fs_mkdir(path)
         git.init(git_options)
       end
 
-      self.new(path, repo_options)
+      self.new(path, server_info, repo_options)
     end
     
     # Quick Methods
@@ -151,12 +152,12 @@ module Grit
     #           {:bare => true, :shared => true}.
     #
     # Returns the newly forked Grit::Repo.
-    def fork_bare(path, options = {})
+    def fork_bare(path, server_info, options = {})
       default_options = {:bare => true, :shared => true}
       real_options = default_options.merge(options)
-      Git.new(path).fs_mkdir('..')
+      Git.new(path, server_info).fs_mkdir('..')
       self.git.clone(real_options, self.path, path)
-      Repo.new(path)
+      Repo.new(path, server_info)
     end
 
     # Public: Fork a bare git repository from another repo.
@@ -168,12 +169,12 @@ module Grit
     #           {:bare => true, :shared => true}.
     #
     # Returns the newly forked Grit::Repo.
-    def fork_bare_from(path, options = {})
+    def fork_bare_from(path, server_info, options = {})
       default_options = {:bare => true, :shared => true}
       real_options = default_options.merge(options)
-      Git.new(self.path).fs_mkdir('..')
+      Git.new(self.path, server_info).fs_mkdir('..')
       self.git.clone(real_options, path, self.path)
-      Repo.new(self.path)
+      Repo.new(self.path, server_info)
     end
 
     # Public: Return the full Git objects from the given SHAs.  Only Commit
