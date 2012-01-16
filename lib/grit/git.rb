@@ -13,7 +13,7 @@ module Grit
       self.git_server = Grit::GitServer.new(git_server, git_port)
     end
     
-    # Rune Stub Methods
+    # Server Stub Methods
     # -------------------------------------------------------------
     
     def fs_write(file, contents)
@@ -36,11 +36,12 @@ module Grit
       self.git_server.call.rev_list(self.git_dir, options, refs)
     end
     
-    # Quick methods
+    # Server Quick methods
     # -------------------------------------------------------------
     
     def quick_commit(branch, filename, filedata, commit_message, email)    
-      self.git_server.call.quick_commit(self.git_dir, branch, filename, filedata, commit_message, email)
+      self.git_server.call.test_raise_error
+      # self.git_server.call.quick_commit(self.git_dir, branch, filename, filedata, commit_message, email)
     end
     
     def quick_delete(branch, filename, commit_message, email)    
