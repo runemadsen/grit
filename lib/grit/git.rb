@@ -7,10 +7,10 @@ module Grit
  
     attr_accessor :git_dir, :work_tree, :git_server
 
-    def initialize(git_dir, server_info)
+    def initialize(git_dir, git_server, git_port)
       self.git_dir    = git_dir
       self.work_tree  = git_dir.gsub(/\/\.git$/,'')
-      self.git_server = Grit::GitServer.new(server_info[:server_url], server_info[:server_port])
+      self.git_server = Grit::GitServer.new(git_server, git_port)
     end
     
     # Rune Stub Methods
